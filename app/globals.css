@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --uber-black: #000;
+  --uber-green: #06c167;
+}
+
+html,
+body {
+  height: 100%;
+  background: #fff;
+  color: #000;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #e8e8e8;
+  z-index: 0;
+  font-family: inherit;
+}
+
+.leaflet-control-attribution {
+  display: none;
+}
+
+.car-pin {
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  margin-top: -14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.dot-pin {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #000;
+  background: #000;
+}
+
+.sq-pin {
+  width: 14px;
+  height: 14px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #000;
+  background: #000;
+}
+
+.pulse-ring {
+  animation: pulse 1.6s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+.sheet {
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 8px;
+}
