@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="280" fill="url(#bg)"/>
+  <g opacity="0.18" stroke="#06C167" stroke-width="2" fill="none">
+    <path d="M0 180 C 200 120, 400 240, 600 170 S 1000 90, 1200 160">
+      <animate attributeName="d" dur="8s" repeatCount="indefinite"
+        values="M0 180 C 200 120, 400 240, 600 170 S 1000 90, 1200 160;
+                M0 160 C 200 220, 400 100, 600 190 S 1000 210, 1200 140;
+                M0 180 C 200 120, 400 240, 600 170 S 1000 90, 1200 160"/>
+    </path>
+  </g>
+  <g transform="translate(80,92)">
+    <text font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" fill="#fff">Uber Clone</text>
+    <text y="48" font-family="Arial, Helvetica, sans-serif" font-size="22" fill="#06C167">Ride • Drive • Track • Pay in ₹</text>
+  </g>
+  <g transform="translate(70,210)">
+    <rect width="42" height="22" rx="6" fill="#111" stroke="#fff" stroke-width="2">
+      <animateTransform attributeName="transform" type="translate" values="0 0; 980 0; 0 0" dur="9s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <circle cx="1080" cy="70" r="46" fill="none" stroke="#06C167" stroke-width="3" opacity="0.7">
+    <animate attributeName="r" values="36;52;36" dur="2.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.8;0.15;0.8" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1080" cy="70" r="10" fill="#06C167"/>
+</svg>
