@@ -18,7 +18,7 @@
 
 **A full ride-hailing clone** — request a cab, watch the driver arrive, or go online and earn.
 
-[Live Demo]([#-run-locally](https://uber-ten-bay.vercel.app/)) · [Features](#-features) · [Deploy](#-deploy-on-vercel)
+[Live Demo]((https://uber-ten-bay.vercel.app/)) · [Features](#-features) · [Deploy](#-deploy-on-vercel)
 
 </div>
 
