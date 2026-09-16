@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { GeoPoint } from "@/lib/types";
-import { filterPlaces } from "@/lib/places";
 import { searchPlaces } from "@/lib/geo";
 
 export function PlaceSearch({
@@ -20,18 +19,17 @@ export function PlaceSearch({
 }) {
   const [q, setQ] = useState(value);
   const [open, setOpen] = useState(false);
-  const [hits, setHits] = useState<GeoPoint[]>(filterPlaces(""));
+  const [hits, setHits] = useState<GeoPoint[]>([]);
 
   useEffect(() => setQ(value), [value]);
 
   useEffect(() => {
     const t = setTimeout(async () => {
-      const local = filterPlaces(q);
-      setHits(local);
-      if (q.trim().length > 2) {
-        const remote = await searchPlaces(q, near);
-        if (remote.length) setHits([...local, ...remote].slice(0, 8));
+      if (q.trim().length < 2) {
+        setHits([]);
+        return;
       }
+      setHits(await searchPlaces(q, near));
     }, 180);
     return () => clearTimeout(t);
   }, [q, near]);

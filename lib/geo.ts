@@ -58,6 +58,26 @@ export function offsetPoint(origin: GeoPoint, dLat: number, dLng: number): GeoPo
   };
 }
 
+export async function nearbyPlaces(near: GeoPoint): Promise<GeoPoint[]> {
+  const terms = ["restaurant", "mall", "station", "hospital", "park"];
+  const batches = await Promise.all(terms.map((t) => searchPlaces(t, near)));
+  const seen = new Set<string>();
+  const out: GeoPoint[] = [];
+  for (const list of batches) {
+    for (const p of list) {
+      if (seen.has(p.address)) continue;
+      seen.add(p.address);
+      out.push(p);
+      if (out.length >= 6) return out;
+    }
+  }
+  return out;
+}
+
+export function jitter(origin: GeoPoint, span = 0.025): GeoPoint {
+  return offsetPoint(origin, (Math.random() - 0.5) * span, (Math.random() - 0.5) * span);
+}
+
 export async function searchPlaces(query: string, near: GeoPoint): Promise<GeoPoint[]> {
   if (!query.trim()) return [];
   try {

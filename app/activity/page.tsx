@@ -34,7 +34,7 @@ export default function ActivityPage() {
                   <p className="mt-1 text-sm text-neutral-600">{r.pickup.address}</p>
                   <p className="text-sm text-neutral-600">→ {r.dropoff.address}</p>
                   <p className="mt-2 text-xs text-neutral-500">
-                    {new Date(r.createdAt).toLocaleString()} · {r.distanceMi.toFixed(1)} mi
+                    {new Date(r.createdAt).toLocaleString()} · {r.distanceKm.toFixed(1)} km
                     {r.driver ? ` · ${r.driver.name}` : ""}
                     {r.rating ? ` · ${r.rating}★` : ""}
                   </p>

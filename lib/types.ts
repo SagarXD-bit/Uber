@@ -55,7 +55,7 @@ export interface Ride {
   product: RideProduct;
   status: RideStatus;
   fare: number;
-  distanceMi: number;
+  distanceKm: number;
   durationMin: number;
   route: [number, number][];
   createdAt: string;

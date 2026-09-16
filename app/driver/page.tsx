@@ -5,9 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/components/AuthProvider";
+import { useGps } from "@/hooks/useGps";
 import { estimateTrip, formatMoney, quoteFare } from "@/lib/fare";
-import { fetchRoute } from "@/lib/geo";
-import { PLACES } from "@/lib/places";
+import { fetchRoute, jitter, reverseGeocode } from "@/lib/geo";
 import { SF_CENTER, type DriverPin, type Ride } from "@/lib/types";
 import { uid } from "@/lib/storage";
 
@@ -16,6 +16,8 @@ const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 export default function DriverPage() {
   const { user, ready, addRide, updateRide } = useAuth();
   const router = useRouter();
+  const { location: gps } = useGps();
+  const center = gps || SF_CENTER;
   const [online, setOnline] = useState(false);
   const [offer, setOffer] = useState<Ride | null>(null);
   const [active, setActive] = useState<Ride | null>(null);
@@ -33,18 +35,20 @@ export default function DriverPage() {
       name: user.name,
       rating: user.rating,
       trips: 128,
-      location: SF_CENTER,
+      location: center,
       heading: 40,
       vehicle: { make: "Toyota", model: "Prius", color: "White", plate: "8XYZ234" },
       etaMin: 4,
     });
-  }, [user]);
+  }, [user, center.lat, center.lng]);
 
   useEffect(() => {
     if (!online || offer || active || !user) return;
-    const t = window.setTimeout(() => {
-      const pickup = PLACES[Math.floor(Math.random() * 8)];
-      const dropoff = PLACES[8 + Math.floor(Math.random() * 8)];
+    const t = window.setTimeout(async () => {
+      const pickupPt = jitter(center, 0.02);
+      const dropoffPt = jitter(center, 0.05);
+      const pickup = { ...pickupPt, address: await reverseGeocode(pickupPt.lat, pickupPt.lng) };
+      const dropoff = { ...dropoffPt, address: await reverseGeocode(dropoffPt.lat, dropoffPt.lng) };
       const stats = estimateTrip(pickup, dropoff);
       const ride: Ride = {
         id: uid("ride"),
@@ -54,8 +58,8 @@ export default function DriverPage() {
         dropoff,
         product: "uberx",
         status: "searching",
-        fare: quoteFare("uberx", stats.distanceMi, stats.durationMin),
-        distanceMi: stats.distanceMi,
+        fare: quoteFare("uberx", stats.distanceKm, stats.durationMin),
+        distanceKm: stats.distanceKm,
         durationMin: stats.durationMin,
         route: [],
         createdAt: new Date().toISOString(),
@@ -63,7 +67,7 @@ export default function DriverPage() {
       setOffer(ride);
     }, 3500);
     return () => window.clearTimeout(t);
-  }, [online, offer, active, user]);
+  }, [online, offer, active, user, center.lat, center.lng]);
 
   const me = useMemo(() => (self ? [self] : []), [self]);
 
@@ -90,11 +94,12 @@ export default function DriverPage() {
       <Navbar />
       <div className="relative min-h-0 flex-1">
         <MapView
-          center={SF_CENTER}
+          center={center}
           pickup={active?.pickup || offer?.pickup}
           dropoff={active?.dropoff || offer?.dropoff}
           route={active?.route || []}
           drivers={me}
+          userLocation={gps}
         />
         <div className="absolute inset-x-0 bottom-0 p-3 md:left-0 md:right-auto md:top-20 md:w-[400px] md:p-4">
           <div className="sheet rounded-2xl bg-white p-4">
@@ -125,7 +130,7 @@ export default function DriverPage() {
                 <p className="mt-1 text-xs text-neutral-600">{offer.pickup.address}</p>
                 <p className="text-xs text-neutral-600">→ {offer.dropoff.address}</p>
                 <div className="mt-2 flex items-center justify-between text-sm">
-                  <span>{offer.distanceMi.toFixed(1)} mi · {offer.durationMin} min</span>
+                  <span>{offer.distanceKm.toFixed(1)} km · {offer.durationMin} min</span>
                   <span className="font-semibold">{formatMoney(offer.fare)}</span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">

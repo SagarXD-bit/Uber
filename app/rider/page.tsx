@@ -9,8 +9,8 @@ import { PlaceSearch } from "@/components/PlaceSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { spawnDrivers, wander } from "@/lib/drivers";
 import { estimateTrip, formatEta, formatMoney, quoteFare } from "@/lib/fare";
-import { bearingDeg, fetchRoute, pointAlong, reverseGeocode } from "@/lib/geo";
-import { PLACES } from "@/lib/places";
+import { bearingDeg, fetchRoute, nearbyPlaces, pointAlong, reverseGeocode } from "@/lib/geo";
+import { useGps } from "@/hooks/useGps";
 import { uid } from "@/lib/storage";
 import { PRODUCTS, SF_CENTER, type DriverPin, type GeoPoint, type Ride, type RideProduct, type RideStatus } from "@/lib/types";
 
@@ -21,9 +21,12 @@ type Phase = RideStatus;
 export default function RiderPage() {
   const { user, ready, addRide, updateRide } = useAuth();
   const router = useRouter();
-  const [center] = useState(SF_CENTER);
-  const [pickup, setPickup] = useState<GeoPoint | null>(PLACES[0]);
+  const { location: gps, status: gpsStatus } = useGps();
+  const center = gps || SF_CENTER;
+  const [pickup, setPickup] = useState<GeoPoint | null>(null);
   const [dropoff, setDropoff] = useState<GeoPoint | null>(null);
+  const [suggestions, setSuggestions] = useState<GeoPoint[]>([]);
+  const [gpsLocked, setGpsLocked] = useState(false);
   const [drivers, setDrivers] = useState<DriverPin[]>([]);
   const [product, setProduct] = useState<RideProduct>("uberx");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -41,12 +44,29 @@ export default function RiderPage() {
   }, [ready, user, router]);
 
   useEffect(() => {
+    if (gps && !gpsLocked) {
+      setPickup(gps);
+      setGpsLocked(true);
+      nearbyPlaces(gps).then(setSuggestions);
+      return;
+    }
+    if (gpsStatus === "denied" && !gpsLocked) {
+      setPickup(SF_CENTER);
+      setGpsLocked(true);
+      nearbyPlaces(SF_CENTER).then(setSuggestions);
+    }
+  }, [gps, gpsLocked, gpsStatus]);
+
+  useEffect(() => {
     setDrivers(spawnDrivers(center));
+  }, [Number(center.lat.toFixed(2)), Number(center.lng.toFixed(2))]);
+
+  useEffect(() => {
     const id = window.setInterval(() => {
       setDrivers((d) => (phase === "idle" || phase === "confirming" ? wander(d) : d));
     }, 1800);
     return () => window.clearInterval(id);
-  }, [center, phase]);
+  }, [phase]);
 
   const stats = useMemo(() => {
     if (!pickup || !dropoff) return null;
@@ -57,7 +77,7 @@ export default function RiderPage() {
     if (!stats) return [];
     return PRODUCTS.map((p) => ({
       ...p,
-      price: quoteFare(p.id, stats.distanceMi, stats.durationMin, surge),
+      price: quoteFare(p.id, stats.distanceKm, stats.durationMin, surge),
     }));
   }, [stats, surge]);
 
@@ -76,7 +96,7 @@ export default function RiderPage() {
 
   async function confirmRide() {
     if (!pickup || !dropoff || !stats || !user) return;
-    const fare = quoteFare(product, stats.distanceMi, stats.durationMin, surge);
+    const fare = quoteFare(product, stats.distanceKm, stats.durationMin, surge);
     const id = uid("ride");
     const ride: Ride = {
       id,
@@ -87,7 +107,7 @@ export default function RiderPage() {
       product,
       status: "searching",
       fare,
-      distanceMi: stats.distanceMi,
+      distanceKm: stats.distanceKm,
       durationMin: stats.durationMin,
       route,
       createdAt: new Date().toISOString(),
@@ -181,6 +201,7 @@ export default function RiderPage() {
           route={displayRoute}
           drivers={sheetDrivers}
           tripCar={tripCar}
+          userLocation={gps}
           onClick={mapClick}
         />
 
@@ -189,7 +210,12 @@ export default function RiderPage() {
             {phase === "idle" && (
               <div className="space-y-3">
                 <h2 className="text-2xl font-semibold">Where to?</h2>
-                <PlaceSearch label="Pickup location" value={pickup?.address || ""} near={center} onSelect={setPickup} />
+                <PlaceSearch
+                  label={gpsStatus === "loading" ? "Locating you…" : "Pickup location"}
+                  value={pickup?.address || ""}
+                  near={center}
+                  onSelect={setPickup}
+                />
                 <PlaceSearch
                   label="Dropoff location"
                   value={dropoff?.address || ""}
@@ -200,9 +226,13 @@ export default function RiderPage() {
                     setPhase("confirming");
                   }}
                 />
-                <p className="text-xs text-neutral-500">Tap the map to set pickup, then dropoff.</p>
+                <p className="text-xs text-neutral-500">
+                  {gpsStatus === "denied"
+                    ? "Location permission denied — search or tap the map."
+                    : "Using your GPS. Tap the map to change pickup or dropoff."}
+                </p>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {PLACES.slice(0, 4).map((p) => (
+                  {suggestions.slice(0, 4).map((p) => (
                     <button
                       key={p.address}
                       className="rounded-full bg-uber-card px-3 py-1.5 text-xs"
@@ -224,7 +254,7 @@ export default function RiderPage() {
                   <div>
                     <h2 className="text-xl font-semibold">Choose a ride</h2>
                     <p className="text-xs text-neutral-500">
-                      {stats.distanceMi.toFixed(1)} mi · {stats.durationMin} min
+                      {stats.distanceKm.toFixed(1)} km · {stats.durationMin} min
                       {surge > 1 ? ` · ${surge}x surge` : ""}
                     </p>
                   </div>
